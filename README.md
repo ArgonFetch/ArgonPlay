@@ -36,7 +36,8 @@ navigation. Only the picture comes from somewhere else.
 - **Seeks properly.** Video and audio arrive as separate byte-range streams and are kept in sync,
   so the timeline works the way a timeline should.
 - **Full quality ladder**, up to whatever the source has and your browser can decode.
-- **Subtitles**, in every language the video carries, taken from the page's own caption list.
+- **Subtitles**, in every language the video carries, served by the instance and painted by the
+  player rather than by the browser.
 - **Ambient mode**, redrawn from our video, because hiding YouTube's player takes its glow with it.
 - **Theater mode**, driven through YouTube's own size button so the page rearranges exactly as it
   always did, corners squared off with it.
@@ -109,15 +110,24 @@ by YouTube under the viewer's own session, so Argon Play reads it instead of ask
 
 | From `ytInitialPlayerResponse` / `ytInitialData` | Used for |
 |---|---|
-| `captions.playerCaptionsTracklistRenderer.captionTracks` | the subtitle list, with signed URLs |
 | `…autoplay.sets[0].autoplayVideo.watchEndpoint.videoId` | what Autoplay plays next |
+| `captions.playerCaptionsTracklistRenderer.captionTracks` | the subtitle list, if the instance has none |
 
 Both live in YouTube's own JavaScript world, which a content script cannot reach, so `page.js`
 runs there (`"world": "MAIN"`), reads the two values and posts them across. It only ever reads and
 only ever posts; a page-world script that takes instructions from the page is a way in.
 
-Captions are fetched from `timedtext` with `&fmt=vtt`, which is same-origin and therefore carries
-the viewer's cookies, then wrapped in a blob and attached as a `<track>`.
+**Subtitles used to come from the page too, and no longer can.** Those caption URLs are signed for
+YouTube's own player; asked for by anything else - including this browser, signed in, sending its
+own cookies - they answer `200` with an empty body, whatever format they are asked for. An empty
+body makes a `<track>` with no cues and reports no error, which is why captions looked broken
+rather than blocked. ArgonFetch reads the same URLs from its own side and serves them as WebVTT,
+so the player asks it instead; the page's list is kept only as the fallback for an instance too
+old to offer any.
+
+The track is fetched through the background worker - a content script's `fetch` is still subject
+to CORS, and the host permission that waives it belongs to the worker - then wrapped in a blob and
+attached as a `<track>` in `hidden` mode.
 
 Calling InnerTube (`/youtubei/v1/player`) instead would mean re-requesting what is already there,
 and it answers `UNPLAYABLE` without the attestation token the page's own player holds.
@@ -157,10 +167,12 @@ popup/                 on/off, instance health, re-resolve
 - **Live streams are not handled.** They resolve to a manifest, which this does not play.
 - **Age-restricted and members-only videos** need an instance with `COOKIES_PATH` configured.
 - **Firefox temporary add-ons** are dropped on restart until this is signed.
-- **Captions and Autoplay need `world: "MAIN"`**, which is Chrome 111+ and Firefox 128+. On
-  anything older the player works and those two rows simply do not appear.
-- **Captions are styled with `::cue`**, which is far less expressive than YouTube's own renderer;
-  positioning and per-cue styling from the source are mostly lost.
+- **Autoplay needs `world: "MAIN"`**, which is Chrome 111+ and Firefox 128+. On anything older the
+  player works and that row simply does not appear.
+- **Subtitles need an instance that serves them**, which means ArgonFetch 1.7 or newer. Against an
+  older one the player falls back to the page's list, and those tracks come back empty.
+- **Cue positioning from the source is not honoured.** The player paints cues itself, centred
+  above the control bar - `hidden` mode hands over the text and the timing, not the layout.
 
 ## License
 
