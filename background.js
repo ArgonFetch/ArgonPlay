@@ -23,6 +23,13 @@ const DEFAULTS = {
 /** Keys live an hour on the instance; stop trusting ours a little before that. */
 const CACHE_TTL_MS = 45 * 60 * 1000;
 
+/**
+ * A fallback result is kept only briefly: it means the instance had no playback endpoint at the
+ * time, and holding that answer for the best part of an hour would keep a freshly updated
+ * instance stuck on the degraded path long after it stopped being true.
+ */
+const FALLBACK_TTL_MS = 60 * 1000;
+
 /** yt-dlp is not fast, and a cold resolve on a long video can crawl. */
 const RESOLVE_TIMEOUT_MS = 60_000;
 
@@ -234,7 +241,9 @@ function cached(id) {
   const hit = cache.get(id);
   if (!hit) return null;
 
-  if (Date.now() - hit.at > CACHE_TTL_MS) {
+  const life = hit.payload.source === 'playback' ? CACHE_TTL_MS : FALLBACK_TTL_MS;
+
+  if (Date.now() - hit.at > life) {
     cache.delete(id);
     return null;
   }
@@ -243,7 +252,11 @@ function cached(id) {
 }
 
 async function handleResolve(pageUrl, force) {
-  const id = idOf(pageUrl) ?? pageUrl;
+  const config = await settings();
+
+  // Keyed by instance as well as video: the cached payload holds that instance's stream URLs,
+  // and serving them after the address changed points the player at the wrong server.
+  const id = `${origin(config.instance)}#${idOf(pageUrl) ?? pageUrl}`;
 
   if (!force) {
     const hit = cached(id);

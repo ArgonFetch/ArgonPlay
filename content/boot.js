@@ -22,6 +22,11 @@
     watching: false,
     silencer: null,
     keeper: null,
+    /**
+     * The video the viewer handed back to YouTube. Kept because the poll below would otherwise
+     * silence that player again within the second, and mount ours back over it.
+     */
+    handedBack: null,
     /** videoId -> { captions, upNext }, as the page-world script reported it. */
     page: new Map(),
   };
@@ -160,6 +165,8 @@
   }
 
   function stop({ handBack = false } = {}) {
+    const handedId = state.id;
+
     state.player?.destroy();
     state.player = null;
     state.id = null;
@@ -172,7 +179,10 @@
     }
 
     if (handBack) {
-      // Give the page back a player the viewer can actually use, ads and all.
+      // Give the page back a player the viewer can actually use, ads and all, and stay out of
+      // its way until they move to another video.
+      state.handedBack = handedId;
+
       const target = document.querySelector('ytd-player video');
       target?.play?.().catch(() => {});
       log('handed playback back to YouTube');
@@ -366,7 +376,11 @@
     state.config ??= await settings();
 
     const id = videoId();
-    const wanted = state.config?.enabled !== false && id !== null;
+
+    // Moving to another video clears it; staying on this one keeps YouTube's player.
+    if (state.handedBack !== null && state.handedBack !== id) state.handedBack = null;
+
+    const wanted = state.config?.enabled !== false && id !== null && state.handedBack !== id;
 
     if (!wanted) {
       if (state.player) stop();
@@ -419,7 +433,7 @@
       if (location.href !== last) {
         last = location.href;
         sync();
-      } else if (videoId()) {
+      } else if (videoId() && state.handedBack !== videoId()) {
         silence();
         ensureDownloadButton();
         // Theater can also be toggled by YouTube's own button or its `t` key.

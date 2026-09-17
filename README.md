@@ -154,6 +154,6 @@ popup/                 on/off, instance health, re-resolve
 - **Captions are styled with `::cue`**, which is far less expressive than YouTube's own renderer;
   positioning and per-cue styling from the source are mostly lost.
 
-## Licence
+## License
 
-Same as ArgonFetch.
+This project is licensed under the GPL-3.0 License. See [LICENSE](LICENSE) for details.

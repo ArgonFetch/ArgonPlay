@@ -1035,21 +1035,70 @@
       this.status.replaceChildren(el('div', { class: 'ap-status-line', text: message }));
     }
 
+    /**
+     * An instance answers the operator, not the viewer. "Set COOKIES_PATH to a Netscape-format
+     * cookies file" is the right thing to tell whoever runs the server and useless to someone
+     * watching through the public one, so the known failures are said again in terms of what the
+     * person looking at the screen can actually do.
+     */
+    static explain(message) {
+      const raw = String(message ?? '');
+
+      if (/signed-in session|cookies file|COOKIES_PATH/i.test(raw)) {
+        return {
+          title: 'YouTube asked the instance to sign in',
+          detail: 'It does this to servers it does not recognise, often only for a moment. Trying '
+            + 'again usually works. If the instance is yours, giving it a cookies file stops it '
+            + 'happening.',
+          retry: true,
+        };
+      }
+
+      if (/DRM/i.test(raw)) {
+        return {
+          title: 'This video is DRM protected',
+          detail: 'Nothing can be done about that from here - it cannot be fetched at all.',
+          retry: false,
+        };
+      }
+
+      if (/took too long/i.test(raw)) {
+        return {
+          title: 'The instance took too long',
+          detail: 'Resolving a video it has not seen before can be slow. Trying again is usually '
+            + 'faster, because the work it already did is kept.',
+          retry: true,
+        };
+      }
+
+      if (/could not be reached|Failed to fetch|NetworkError/i.test(raw)) {
+        return {
+          title: 'The instance could not be reached',
+          detail: 'Check the address under Settings, and that the instance is running.',
+          retry: true,
+        };
+      }
+
+      return { title: 'Argon Play could not start this video', detail: raw, retry: true };
+    }
+
     fail(message) {
       this.root.dataset.state = 'error';
       this.wantPlaying = false;
       this.halt();
 
+      const said = Player.explain(message);
+
       this.status.replaceChildren(
-        el('div', { class: 'ap-status-title', text: 'Argon Play could not start this video' }),
-        el('div', { class: 'ap-status-line', text: message }),
+        el('div', { class: 'ap-status-title', text: said.title }),
+        el('div', { class: 'ap-status-line', text: said.detail }),
         el('div', { class: 'ap-status-actions' }, [
-          el('button', {
+          said.retry ? el('button', {
             class: 'ap-action',
             type: 'button',
             text: 'Try again',
             onclick: () => this.onRetry?.(),
-          }),
+          }) : null,
           el('button', {
             class: 'ap-action ap-action-quiet',
             type: 'button',
