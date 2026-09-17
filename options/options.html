@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Argon Play</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="sheet">
+    <header class="head">
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="28 26 154 148" width="34" height="34" fill="currentColor" aria-hidden="true">
+          <path d="M59.6 38.3 81.3 42.1 58.7 170.1 37 166.3Z" fill-opacity="0.35"/>
+          <path d="M91.5 88.4 95 108.1 65.5 113.3 62 93.6Z" fill-opacity="0.35"/>
+          <path d="M85.7 41.5 107.3 37.7 129.9 165.7 108.2 169.5Z"/>
+          <path d="M157.3 30 160.7 49.7 113.5 58 110 38.3Z"/>
+          <path d="M165.4 74.2 168.9 93.9 121.6 102.3 118.1 82.6Z"/>
+          <path d="M157.7 28.8 177.4 32.2 166.3 95.2 146.6 91.8Z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Argon Play</h1>
+        <p class="sub">YouTube, played from an ArgonFetch instance instead of from YouTube's own resolver.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Instance</h2>
+      <p class="hint">
+        Where the streams come from. The public instance works out of the box; a self-hosted one
+        keeps every request between your browser and your own server.
+      </p>
+
+      <div class="row">
+        <input id="instance" type="url" spellcheck="false" placeholder="https://app.argonfetch.dev">
+        <button id="test" type="button" class="ghost">Test</button>
+      </div>
+
+      <p id="health" class="health"></p>
+
+      <label class="check">
+        <input id="enabled" type="checkbox">
+        <span>Take over the player on YouTube</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Playback</h2>
+
+      <label class="field">
+        <span class="label">Highest quality to request</span>
+        <select id="maxHeight">
+          <option value="360">360p</option>
+          <option value="480">480p</option>
+          <option value="720">720p</option>
+          <option value="1080">1080p</option>
+          <option value="1440">1440p</option>
+          <option value="2160">2160p (4K)</option>
+          <option value="4320">4320p (8K)</option>
+        </select>
+        <span class="hint">
+          Argon Play never asks for more than this, and drops to the best stream your browser can
+          decode when the source has nothing at this size.
+        </span>
+      </label>
+
+      <label class="check">
+        <input id="preferH264" type="checkbox">
+        <span>
+          Prefer H.264
+          <em>Decoded in hardware almost everywhere, at roughly twice the bytes of VP9.</em>
+        </span>
+      </label>
+
+      <label class="check">
+        <input id="autoplay" type="checkbox">
+        <span>
+          Start playing once the streams resolve
+          <em>A browser that has not been clicked in yet will still refuse; the player says so.</em>
+        </span>
+      </label>
+
+      <label class="field">
+        <span class="label">Starting volume <output id="volumeOut">100%</output></span>
+        <input id="keepVolume" type="range" min="0" max="100" step="1">
+      </label>
+    </section>
+
+    <footer class="foot">
+      <span id="saved" class="saved">Saved</span>
+      <a href="https://docs.argonfetch.dev" target="_blank" rel="noreferrer">ArgonFetch documentation</a>
+    </footer>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

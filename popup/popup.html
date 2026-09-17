@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Argon Play</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <svg class="mark" viewBox="28 26 154 148" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M59.6 38.3 81.3 42.1 58.7 170.1 37 166.3Z" fill-opacity="0.35"/>
+          <path d="M91.5 88.4 95 108.1 65.5 113.3 62 93.6Z" fill-opacity="0.35"/>
+          <path d="M85.7 41.5 107.3 37.7 129.9 165.7 108.2 169.5Z"/>
+          <path d="M157.3 30 160.7 49.7 113.5 58 110 38.3Z"/>
+          <path d="M165.4 74.2 168.9 93.9 121.6 102.3 118.1 82.6Z"/>
+          <path d="M157.7 28.8 177.4 32.2 166.3 95.2 146.6 91.8Z"/>
+        </svg>
+    <strong>Argon Play</strong>
+  </header>
+
+  <label class="toggle">
+    <input id="enabled" type="checkbox">
+    <span>Take over YouTube's player</span>
+  </label>
+
+  <div class="line">
+    <span class="key">Instance</span>
+    <span id="instance" class="value">—</span>
+  </div>
+
+  <div class="line">
+    <span class="key">Status</span>
+    <span id="status" class="value">Checking…</span>
+  </div>
+
+  <div class="actions">
+    <button id="refresh" type="button">Re-resolve this video</button>
+    <button id="options" type="button" class="quiet">Settings</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

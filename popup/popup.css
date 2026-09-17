@@ -1,0 +1,81 @@
+:root { color-scheme: dark; }
+
+body {
+  width: 272px;
+  margin: 0;
+  padding: 14px;
+  background: #0d0b12;
+  color: #f2eff7;
+  font: 13px/1.5 "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mark { color: #9f54e5; }
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: #16131d;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #9f54e5;
+}
+
+.line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 2px;
+}
+
+.key { color: rgba(242, 239, 247, 0.55); }
+
+.value {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value.ok { color: #6fe0a0; }
+.value.bad { color: #ff8b8b; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+button {
+  flex: 1 1 auto;
+  padding: 9px 10px;
+  background: #9f54e5;
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.quiet {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+button:hover { filter: brightness(1.12); }

@@ -1,0 +1,11 @@
+# Nothing here is built, so this is only for what a machine leaves behind.
+.DS_Store
+Thumbs.db
+*.zip
+*.xpi
+*.crx
+*.pem
+
+# Editors
+.vscode/
+.idea/

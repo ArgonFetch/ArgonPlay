@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "Argon Play",
+  "version": "0.1.0",
+  "description": "Watches YouTube through ArgonFetch. The page never starts YouTube's player, so there is nothing for an ad to interrupt.",
+  "homepage_url": "https://www.argonfetch.dev/",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "permissions": ["storage"],
+
+  "host_permissions": ["https://app.argonfetch.dev/*"],
+
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["content/argon.js", "content/player.js", "content/boot.js"],
+      "css": ["content/player.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "js": ["content/page.js"],
+      "run_at": "document_end",
+      "world": "MAIN",
+      "all_frames": false
+    }
+  ],
+
+  "action": {
+    "default_title": "Argon Play",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "argonplay@argonfetch.dev",
+      "strict_min_version": "128.0"
+    }
+  }
+}

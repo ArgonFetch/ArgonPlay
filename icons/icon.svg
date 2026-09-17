@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Argon Play.
+
+  This is the ArgonFetch mark with one bar added. The plate, the gradients, the glow, the faded A
+  and the stem and arms of the F are all exactly where they are on ArgonFetch; closing the two
+  arms on the right turns that F into a P. Nothing else moves, so the two marks read as a pair.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0" stop-color="#141316"/>
+      <stop offset="0.5" stop-color="#1a1820"/>
+      <stop offset="1" stop-color="#161419"/>
+    </linearGradient>
+
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0" stop-color="#8a2be2"/>
+      <stop offset="0.5" stop-color="#9644ff"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+
+    <filter id="glow" x="-0.36" y="-0.24" width="1.72" height="1.48">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="200" height="200" rx="20" ry="20" fill="url(#bgGradient)"/>
+
+  <!-- A, held back - ArgonFetch's own bar, untouched -->
+  <rect width="22" height="130" x="130" y="35" rx="4" ry="4"
+        fill="url(#purpleGradient)" fill-opacity="0.25"
+        transform="rotate(10,76.148361,-365.59358)" filter="url(#glow)"/>
+
+  <!-- the stem both letters share -->
+  <rect width="22" height="130" x="50" y="35" rx="4" ry="4"
+        fill="url(#purpleGradient)"
+        transform="rotate(-10,104.97508,-165.56004)" filter="url(#glow)"/>
+
+  <!-- the A's crossbar -->
+  <rect width="20" height="30" x="70" y="45" rx="3" ry="3"
+        fill="url(#purpleGradient)"
+        transform="rotate(80,54.931827,79.514654)" filter="url(#glow)"/>
+
+  <!-- the two arms -->
+  <rect width="20" height="48" x="65" y="105" rx="3" ry="3"
+        fill="url(#purpleGradient)"
+        transform="rotate(80,155.84464,122.4721)" filter="url(#glow)"/>
+
+  <rect width="20" height="48" x="115" y="105" rx="3" ry="3"
+        fill="url(#purpleGradient)"
+        transform="rotate(80,158.53775,119.649)" filter="url(#glow)"/>
+
+  <!-- the bar that closes them: F becomes P -->
+  <rect width="20" height="64" x="152" y="30" rx="3" ry="3"
+        fill="url(#purpleGradient)"
+        transform="rotate(10,162,62)" filter="url(#glow)"/>
+</svg>

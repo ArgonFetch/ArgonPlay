@@ -1,0 +1,1263 @@
+/*
+ * Argon Play - player styling.
+ *
+ * The measurements, timings and easings are YouTube's own, read off the running player rather
+ * than guessed at: the 72px control strip with its 48px pill, the 6px rail that idles at
+ * scaleY(.6) and stands up on hover, the 13px scrubber, the blur(16px) frosted pill on the right
+ * controls, the 40px menu rows in a 250px panel, the bezel, the gradients. What changed is the
+ * accent - #f03 becomes ArgonFetch's #9f54e5 - and the name on the badge.
+ *
+ * Everything is scoped under .argonplay and every property a YouTube rule could reach is stated
+ * outright. The page's own stylesheet has opinions about buttons, and it wins by specificity far
+ * more often than it should.
+ */
+
+.argonplay {
+  /* YouTube: #ff0033 into #ff2791. Ours walks the same distance through purple. */
+  --ap-accent: #9f54e5;
+  --ap-accent-far: #d478ff;
+
+  --ap-text: #eee;
+  --ap-dim: #ccc;
+
+  /*
+   * --yt-delhi-bottom-controls-height / --yt-delhi-pill-height / --yt-delhi-pill-top-height.
+   * A watch page runs the compact set; the roomier one is for big mode, which here means
+   * full screen.
+   */
+  --ap-bar: 56px;
+  --ap-pill: 40px;
+  --ap-pill-top: 8px;
+
+  --ap-frost: rgba(0, 0, 0, 0.3);
+  --ap-hover: rgba(255, 255, 255, 0.1);
+  --ap-press: rgba(255, 255, 255, 0.2);
+
+  --ap-in: cubic-bezier(0, 0, 0.2, 1);
+  --ap-out: cubic-bezier(0.4, 0, 1, 1);
+  --ap-soft: cubic-bezier(0.05, 0, 0, 1);
+
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+  container-type: inline-size;
+
+  background: #000;
+  outline: none;
+
+  /* ytd-player carries the 12px on a watch page, and that is the element we hide. */
+  border-radius: 12px;
+
+  font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  line-height: 14.3px;
+  color: var(--ap-text);
+  text-shadow: rgba(0, 0, 0, 0.5) 0 0 2px;
+
+  contain: layout paint;
+}
+
+/* Big mode: everything grows, the way YouTube's does once it fills the screen. */
+.argonplay.is-fullscreen {
+  --ap-bar: 72px;
+  --ap-pill: 48px;
+  --ap-pill-top: 12px;
+}
+
+/* Theater and full screen run edge to edge, so the corners come off. */
+ytd-watch-flexy[theater] .argonplay,
+.argonplay.is-fullscreen {
+  border-radius: 0;
+}
+
+/* The stage is what actually shows the picture, so it has to be clipped too. */
+.argonplay .ap-stage,
+.argonplay .ap-video {
+  border-radius: inherit;
+}
+
+.argonplay *,
+.argonplay *::before,
+.argonplay *::after {
+  box-sizing: border-box;
+}
+
+.argonplay.is-idle {
+  cursor: none;
+}
+
+/* ------------------------------------------------------------------ stage */
+
+.argonplay .ap-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.argonplay .ap-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+.argonplay .ap-audio {
+  display: none;
+}
+
+.argonplay .ap-poster {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(18px) brightness(0.35);
+  opacity: 0;
+  transition: opacity 0.24s ease;
+  pointer-events: none;
+}
+
+.argonplay[data-state="working"] .ap-poster,
+.argonplay[data-state="error"] .ap-poster {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ waiting */
+
+.argonplay .ap-spinner {
+  position: absolute;
+  display: none;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.argonplay[data-state="buffering"] .ap-spinner,
+.argonplay[data-state="working"] .ap-spinner {
+  display: block;
+}
+
+.argonplay .ap-spinner-ring {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.16);
+  border-top-color: var(--ap-accent);
+  animation: ap-spin 900ms linear infinite;
+}
+
+@keyframes ap-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .argonplay .ap-spinner-ring { animation-duration: 2.4s; }
+}
+
+/* ------------------------------------------------------------------ big play */
+
+/*
+ * YouTube's plate is their logo silhouette, which is a trademark, so this is a rounded
+ * rectangle of the same 68x48 - same size, same place, same hover from grey to the accent.
+ */
+.argonplay .ap-large-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 68px;
+  height: 48px;
+  margin-left: -34px;
+  margin-top: -24px;
+  padding: 0;
+  z-index: 63;
+
+  display: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  transition: opacity 0.25s var(--ap-in);
+}
+
+.argonplay[data-state="idle"] .ap-large-play,
+.argonplay[data-state="ended"] .ap-large-play {
+  display: block;
+}
+
+.argonplay .ap-large-play svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.argonplay .ap-large-play-plate {
+  fill: #212121;
+  fill-opacity: 0.8;
+  transition: fill 0.1s var(--ap-out), fill-opacity 0.1s var(--ap-out);
+}
+
+.argonplay .ap-large-play-mark {
+  fill: #fff;
+}
+
+.argonplay .ap-large-play:hover .ap-large-play-plate {
+  fill: var(--ap-accent);
+  fill-opacity: 1;
+  transition: fill 0.1s var(--ap-in), fill-opacity 0.1s var(--ap-in);
+}
+
+/* ------------------------------------------------------------------ bezel */
+
+.argonplay .ap-bezel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  z-index: 19;
+
+  display: none;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 26px;
+  pointer-events: none;
+}
+
+.argonplay .ap-bezel.is-shown {
+  display: block;
+  animation: ap-bezel-fadeout 0.5s linear 0s 1 normal forwards;
+}
+
+.argonplay .ap-bezel-icon {
+  width: 40px;
+  height: 40px;
+  margin: 6px;
+  color: #fff;
+}
+
+@keyframes ap-bezel-fadeout {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+.argonplay .ap-bezel-text-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10%;
+  z-index: 19;
+
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s var(--ap-out);
+}
+
+.argonplay .ap-bezel-text-wrap.is-shown {
+  opacity: 1;
+}
+
+.argonplay .ap-bezel-text {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 175%;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------------ status */
+
+.argonplay .ap-status {
+  position: absolute;
+  z-index: 30;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  max-width: 82%;
+  padding: 26px 30px;
+
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+}
+
+.argonplay[data-state="working"] .ap-status,
+.argonplay[data-state="error"] .ap-status {
+  display: flex;
+}
+
+.argonplay[data-state="working"] .ap-status {
+  /* The spinner already says it; this only carries the line of text under it. */
+  background: none;
+  backdrop-filter: none;
+  transform: translateY(58px);
+}
+
+.argonplay .ap-status-title {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.argonplay .ap-status-line {
+  font-size: 13px;
+  color: var(--ap-dim);
+  max-width: 44ch;
+}
+
+.argonplay .ap-status-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.argonplay .ap-action {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 18px;
+  background: var(--ap-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-shadow: none;
+  cursor: pointer;
+}
+
+.argonplay .ap-action-quiet {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.argonplay .ap-action:hover {
+  filter: brightness(1.12);
+}
+
+/* ------------------------------------------------------------------ top bar */
+
+.argonplay .ap-chrome-top {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  padding-top: 12px;
+  z-index: 59;
+
+  display: flex;
+  align-items: center;
+
+  pointer-events: none;
+  transition: opacity 0.25s var(--ap-in);
+}
+
+.argonplay.is-idle .ap-chrome-top {
+  opacity: 0;
+  transition: opacity 0.1s var(--ap-out);
+}
+
+.argonplay .ap-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 28px;
+
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+  color: var(--ap-text);
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.argonplay .ap-badge svg {
+  color: var(--ap-accent-far);
+  filter: drop-shadow(rgba(0, 0, 0, 0.8) 0 0 1px);
+}
+
+.argonplay .ap-badge-quality {
+  color: var(--ap-dim);
+}
+
+.argonplay .ap-badge-quality:not(:empty)::before {
+  content: "·";
+  margin: 0 5px 0 1px;
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+.argonplay .ap-chrome-bottom {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  /* YouTube states height and padding on a content box; stated here for a border box. */
+  height: calc(var(--ap-bar) + 3px);
+  padding-top: 3px;
+  z-index: 59;
+
+  direction: ltr;
+  text-align: left;
+  transition: opacity 0.25s var(--ap-in);
+}
+
+.argonplay.is-idle .ap-chrome-bottom {
+  opacity: 0;
+  transition: opacity 0.1s var(--ap-out);
+  pointer-events: none;
+}
+
+.argonplay[data-state="error"] .ap-chrome-bottom,
+.argonplay[data-state="working"] .ap-chrome-bottom {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ progress */
+
+.argonplay .ap-progress-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--ap-bar);
+  height: 6px;
+  z-index: 60;
+  cursor: pointer;
+}
+
+.argonplay[data-seekable="false"] .ap-progress-container {
+  cursor: default;
+}
+
+/* The bar is 6px; the thing you have to hit with a mouse is 16px. */
+.argonplay .ap-progress-padding {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 16px;
+  z-index: 28;
+}
+
+.argonplay .ap-progress-bar {
+  position: absolute;
+  inset: 0;
+  height: 6px;
+  z-index: 31;
+}
+
+/* One rail per chapter, laid side by side with YouTube's 2px gap between them. */
+.argonplay .ap-progress-segments {
+  display: flex;
+  height: 100%;
+  gap: 2px;
+}
+
+.argonplay:not(.has-chapters) .ap-progress-segments {
+  gap: 0;
+}
+
+.argonplay .ap-progress-list {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  z-index: 39;
+
+  background: rgba(40, 40, 40, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+
+  transform: scaleY(0.667);
+  transition: transform 0.1s var(--ap-out);
+}
+
+.argonplay .ap-progress-container:hover .ap-progress-list,
+.argonplay.is-scrubbing .ap-progress-list {
+  transform: none;
+  transition: transform 0.1s var(--ap-in);
+}
+
+.argonplay[data-seekable="false"] .ap-progress-container:hover .ap-progress-list {
+  transform: scaleY(0.667);
+}
+
+.argonplay .ap-load-progress,
+.argonplay .ap-hover-progress,
+.argonplay .ap-play-progress {
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: 0 0;
+}
+
+.argonplay .ap-load-progress {
+  z-index: 33;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.argonplay .ap-hover-progress {
+  z-index: 35;
+  background: rgba(0, 0, 0, 0.125);
+  opacity: 0;
+  transition: opacity 0.25s var(--ap-in);
+}
+
+.argonplay .ap-progress-container:hover .ap-hover-progress {
+  opacity: 1;
+}
+
+.argonplay .ap-play-progress {
+  z-index: 34;
+  background: linear-gradient(90deg, var(--ap-accent) 80%, var(--ap-accent-far));
+  background-size: 100cqw auto;
+}
+
+.argonplay .ap-scrubber-container {
+  position: absolute;
+  top: -3px;
+  left: -6px;
+  z-index: 43;
+}
+
+/* The dot is always on the bar, and grows under the pointer. */
+.argonplay .ap-scrubber-button {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--ap-accent);
+
+  transition: transform 0.1s var(--ap-out);
+}
+
+.argonplay .ap-progress-container:hover .ap-scrubber-button,
+.argonplay.is-scrubbing .ap-scrubber-button {
+  transform: scale(1.16667);
+  transition: transform 0.1s var(--ap-in);
+}
+
+.argonplay[data-seekable="false"] .ap-scrubber-button {
+  display: none;
+}
+
+.argonplay .ap-tooltip {
+  position: absolute;
+  bottom: 22px;
+  transform: translateX(-50%);
+
+  padding: 5px 9px;
+  border-radius: 3px;
+
+  background: rgba(28, 28, 28, 0.9);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s var(--ap-out);
+}
+
+.argonplay .ap-tooltip.is-shown {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ controls */
+
+.argonplay .ap-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  height: var(--ap-bar);
+  line-height: var(--ap-bar);
+  font-size: 109%;
+}
+
+/* Every child sets its own margin-top off the strip, so nothing is centred for it. */
+.argonplay .ap-controls-left,
+.argonplay .ap-controls-right {
+  display: flex;
+  align-items: flex-start;
+  z-index: 59;
+}
+
+/* The right-hand buttons ride in one frosted pill, the way the current player draws them. */
+.argonplay .ap-controls-right {
+  height: var(--ap-pill);
+  margin-top: var(--ap-pill-top);
+  padding: 0 4px;
+
+  border-radius: 28px;
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+  text-shadow: #000 0 0 2px;
+}
+
+.argonplay .ap-controls-right svg {
+  filter: drop-shadow(rgba(0, 0, 0, 0.8) 0 0 1px);
+}
+
+.argonplay .ap-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 48 wide, pill-tall, icon 24 in the middle - the right-hand buttons' shape. */
+  width: 48px;
+  height: var(--ap-pill);
+  padding: 0;
+  margin: 0;
+
+  border: none;
+  background: transparent;
+  color: var(--ap-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The hover wash is a pill behind the icon, not a change to the button itself. */
+.argonplay .ap-button::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 48px;
+  height: calc(var(--ap-pill) - 8px);
+
+  border-radius: 40px;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.argonplay .ap-button:hover::before,
+.argonplay .ap-button.is-active::before {
+  background-color: var(--ap-hover);
+  transition: background-color 0.2s var(--ap-soft);
+}
+
+.argonplay .ap-button:active::before {
+  background-color: var(--ap-press);
+  transition: background-color 0.2s var(--ap-soft);
+}
+
+.argonplay .ap-button:focus-visible::before {
+  background-color: var(--ap-hover);
+  outline: 2px solid var(--ap-accent-far);
+}
+
+.argonplay .ap-button svg {
+  position: relative;
+  z-index: 1;
+}
+
+/* The volume arcs scale away from the speaker rather than blinking out. */
+.argonplay .ap-button svg path {
+  transition: transform 0.12s var(--ap-in);
+}
+
+/* Play sits on its own round plate to the left of everything else. */
+.argonplay .ap-controls-left > .ap-button {
+  width: var(--ap-pill);
+  margin-top: var(--ap-pill-top);
+  border-radius: 50%;
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+}
+
+.argonplay .ap-controls-left > .ap-button::before {
+  inset: 4px;
+  width: auto;
+  height: auto;
+  top: auto;
+  left: auto;
+  transform: none;
+  border-radius: 50%;
+}
+
+/* ------------------------------------------------------------------ volume */
+
+.argonplay .ap-volume-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  height: var(--ap-pill);
+  margin: var(--ap-pill-top) 0 var(--ap-pill-top) 12px;
+
+  border-radius: 28px;
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+}
+
+.argonplay .ap-volume-area > .ap-button {
+  width: var(--ap-pill);
+}
+
+.argonplay .ap-volume-area > .ap-button::before {
+  width: var(--ap-pill);
+}
+
+.argonplay .ap-volume-panel {
+  height: var(--ap-pill);
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  transition: margin 0.2s var(--ap-out), width 0.2s var(--ap-out);
+}
+
+.argonplay .ap-volume-area:hover .ap-volume-panel,
+.argonplay .ap-volume-panel:focus-within {
+  width: 52px;
+  margin-right: 8px;
+  transition: margin 0.2s var(--ap-in), width 0.2s var(--ap-in);
+}
+
+.argonplay .ap-volume-slider {
+  width: 52px;
+  height: 12px;
+  margin: 0;
+  padding: 0;
+
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+.argonplay .ap-volume-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    #fff 0 var(--ap-filled, 100%),
+    rgba(255, 255, 255, 0.35) var(--ap-filled, 100%) 100%
+  );
+}
+
+.argonplay .ap-volume-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.argonplay .ap-volume-slider::-moz-range-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.argonplay .ap-volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.argonplay .ap-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+}
+
+/* ------------------------------------------------------------------ time */
+
+/* Its own frosted pill, like the play plate and the volume area beside it. */
+.argonplay .ap-time {
+  height: var(--ap-pill);
+  margin: var(--ap-pill-top) 0 0 12px;
+  padding: 0 14px;
+
+  border-radius: 28px;
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+
+  font-size: 14px;
+  line-height: var(--ap-pill);
+  font-variant-numeric: tabular-nums;
+  color: var(--ap-text);
+  text-shadow: #000 0 0 2px;
+  white-space: nowrap;
+}
+
+.argonplay .ap-time-sep,
+.argonplay .ap-time-end {
+  color: var(--ap-dim);
+}
+
+/* ------------------------------------------------------------------ settings */
+
+/*
+ * .ytp-popup: the box animates its own width and height while the panels inside slide past each
+ * other. The size comes from JS, which measures the panel it is about to show; the transition
+ * here is the one YouTube uses for it.
+ */
+.argonplay .ap-settings {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--ap-bar) + 4px);
+  z-index: 71;
+
+  display: none;
+  overflow: hidden;
+
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  color: var(--ap-text);
+  text-shadow: rgba(0, 0, 0, 0.5) 0 0 2px;
+  user-select: none;
+}
+
+.argonplay .ap-settings.is-open {
+  display: block;
+}
+
+.argonplay .ap-settings.is-animating {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.argonplay .ap-popup-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.argonplay .ap-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 250px;
+  overflow: hidden auto;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Measured off to one side, at whatever width its widest row wants. */
+.argonplay .ap-panel.is-measuring {
+  position: absolute;
+  visibility: hidden;
+  width: max-content;
+  transition: none;
+}
+
+.argonplay .ap-panel-enter-forward { transform: translateX(100%); opacity: 0; }
+.argonplay .ap-panel-enter-back { transform: translateX(-100%); opacity: 0; }
+.argonplay .ap-panel-leave-forward { transform: translateX(-100%); opacity: 0; }
+.argonplay .ap-panel-leave-back { transform: translateX(100%); opacity: 0; }
+
+.argonplay .ap-panel-menu {
+  display: table;
+  width: 100%;
+  padding: 8px 0;
+  color: var(--ap-text);
+  box-sizing: border-box;
+}
+
+/* ---- rows */
+
+.argonplay .ap-menuitem {
+  display: table-row;
+  height: 48px;
+  cursor: pointer;
+  outline: none;
+}
+
+.argonplay .ap-menuitem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.argonplay .ap-menuitem-icon,
+.argonplay .ap-menuitem-label,
+.argonplay .ap-menuitem-content {
+  display: table-cell;
+  vertical-align: middle;
+  padding: 0 15px;
+  white-space: nowrap;
+}
+
+.argonplay .ap-menuitem-icon {
+  padding: 0 10px;
+  width: 24px;
+}
+
+.argonplay .ap-menuitem-icon svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  color: #fff;
+}
+
+/* No width: the table sizes itself from its cells, and a label told to fill 100% of a
+   max-content measurement drags the whole panel out to the width of the player. */
+.argonplay .ap-menuitem-label {
+  padding-left: 0;
+  font-size: 14px;
+}
+
+.argonplay .ap-menuitem-content {
+  font-size: 14px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* The chevron on a row that opens a panel, drawn where YouTube draws it. */
+.argonplay .ap-menuitem[aria-haspopup="true"] .ap-menuitem-content {
+  padding-right: 32px;
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px 18px;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9Ii43IiBkPSJtOS40IDE4LjQtLjctLjcgNS42LTUuNi01LjctNS43LjctLjcgNi40IDYuNHoiLz48L3N2Zz4=");
+}
+
+/* A radio row drops its value cell, indents, and wears the tick in the gutter. */
+.argonplay .ap-menuitem[role="menuitemradio"] .ap-menuitem-content {
+  display: none;
+}
+
+.argonplay .ap-menuitem[role="menuitemradio"] .ap-menuitem-label {
+  padding-left: 35px;
+  padding-right: 20px;
+}
+
+.argonplay .ap-menuitem[role="menuitemradio"][aria-checked="true"] .ap-menuitem-label {
+  background-repeat: no-repeat;
+  background-position: left 10px center;
+  background-size: 18px 18px;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTkgMTYuMiA0LjggMTJsLTEuNCAxLjRMOSAxOSAyMSA3bC0xLjQtMS40eiIvPjwvc3ZnPg==");
+}
+
+.argonplay .ap-menuitem-hint {
+  margin-left: 10px;
+  font-size: 91%;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the switch */
+
+.argonplay .ap-menuitem-toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.3);
+  transition: 0.08s cubic-bezier(0.4, 0, 1, 1);
+  vertical-align: middle;
+}
+
+.argonplay .ap-menuitem-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 20px;
+  background-color: #fff;
+  transform: translateX(0);
+  transition: 0.08s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.argonplay .ap-menuitem[aria-checked="true"] .ap-menuitem-toggle {
+  background-color: var(--ap-accent);
+}
+
+.argonplay .ap-menuitem[aria-checked="true"] .ap-menuitem-toggle::after {
+  transform: translateX(16px);
+}
+
+/* Said once, under the rows it applies to. */
+.argonplay .ap-menu-footnote {
+  display: block;
+  max-width: 250px;
+  padding: 10px 15px 4px;
+  margin-top: 6px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: normal;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- sub-menu header */
+
+.argonplay .ap-panel-header {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 109%;
+  color: var(--ap-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.argonplay .ap-panel-back-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.argonplay .ap-panel-back {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent no-repeat center / 32px 32px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHBhdGggZmlsbD0iI2ZmZiIgZD0ibTE5LjQxIDIwLjA5LTQuNTgtNC41OSA0LjU4LTQuNTlMMTggOS41bC02IDYgNiA2eiIvPjwvc3ZnPg==");
+}
+
+.argonplay .ap-panel-title {
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------------ ambient */
+
+/*
+ * Ambient mode. The canvas is a few dozen pixels wide, blown up behind everything and blurred
+ * past recognition, which is all the glow ever was. It reaches past the player because the point
+ * is the colour on the page around it.
+ */
+.argonplay .ap-ambient {
+  position: absolute;
+  /* Past the edges on purpose: the glow is the colour leaving the picture. */
+  inset: -12%;
+  width: auto;
+  height: auto;
+  z-index: 0;
+
+  opacity: 0;
+  filter: blur(72px) saturate(2.6);
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.argonplay.has-ambient .ap-ambient {
+  opacity: 0.85;
+}
+
+/* The glow has to be able to leave the player, so the box stops clipping while it is on. */
+.argonplay.has-ambient {
+  overflow: visible;
+  contain: layout;
+}
+
+/* The stage is normally opaque black, which would paint straight over the glow. With ambient on
+   the letterbox bars are where the colour shows, so the black goes and only the video stays. */
+.argonplay.has-ambient .ap-stage {
+  z-index: 1;
+  background: transparent;
+}
+
+.argonplay.has-ambient .ap-video {
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ captions */
+
+.argonplay .ap-video::cue {
+  background: rgba(8, 8, 8, 0.75);
+  color: #fff;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 100%;
+  line-height: normal;
+}
+
+/* ------------------------------------------------------------------ the page */
+
+/* YouTube's player keeps its box - the layout is built on it - but never paints or plays. */
+html.argonplay-active ytd-player {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ------------------------------------------------------------------ download menu */
+
+.argonplay-downloads {
+  position: fixed;
+  z-index: 2600;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 268px;
+  max-height: 60vh;
+  padding: 8px 0;
+  overflow-y: auto;
+
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+
+  font-family: Roboto, Arial, sans-serif;
+  color: #eee;
+}
+
+.argonplay-downloads .ap-menu-head {
+  padding: 8px 15px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ccc;
+}
+
+.argonplay-downloads .ap-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  width: 100%;
+  height: 40px;
+  padding: 0 15px;
+
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.argonplay-downloads .ap-menu-row:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.argonplay-downloads .ap-menu-label {
+  flex: 1 1 auto;
+}
+
+.argonplay-downloads .ap-menu-hint {
+  color: #ccc;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ chapters */
+
+/* The chapter you are in, sitting beside the clock. */
+.argonplay .ap-chapter-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+
+  max-width: 240px;
+  height: var(--ap-pill);
+  margin: var(--ap-pill-top) 0 0 8px;
+  padding: 0 8px 0 12px;
+
+  border: none;
+  border-radius: 28px;
+  background: var(--ap-frost);
+  backdrop-filter: blur(16px);
+
+  color: var(--ap-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: var(--ap-pill);
+  text-shadow: #000 0 0 2px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.argonplay .ap-chapter-name:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.argonplay .ap-chapter-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.argonplay .ap-chapter-name svg {
+  flex: 0 0 auto;
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+/* ------------------------------------------------------------------ hover preview */
+
+.argonplay .ap-preview {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+
+  pointer-events: none;
+  z-index: 70;
+}
+
+.argonplay .ap-preview.is-shown {
+  display: flex;
+}
+
+/* The storyboard frame, in YouTube's white-bordered plate. */
+.argonplay .ap-preview-frame {
+  display: none;
+  border: 2px solid #fff;
+  border-radius: 6px;
+  background-repeat: no-repeat;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.argonplay .ap-preview-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 260px;
+}
+
+.argonplay .ap-preview-chapter {
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 4px;
+
+  background: rgba(0, 0, 0, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.argonplay .ap-preview-time {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: rgba(0, 0, 0, 0.8) 0 0 3px;
+}
