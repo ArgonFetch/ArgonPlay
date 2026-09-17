@@ -113,6 +113,16 @@ async function fetchPlayback(base, pageUrl, signal) {
     video: (data.video ?? []).map(track),
     audio: (data.audio ?? []).map(track),
     muxed: (data.muxed ?? []).map(track),
+
+    // The instance fetches these itself. YouTube's own caption URLs answer this browser with
+    // 200 and an empty body, which makes a track with no cues and reports no error at all.
+    subtitles: (data.subtitles ?? []).map((s) => ({
+      url: base + s.path,
+      lang: s.language,
+      name: s.name || s.language,
+      automatic: s.automatic === true,
+      source: 'instance',
+    })),
   };
 }
 
@@ -297,10 +307,40 @@ async function reachable() {
   }
 }
 
+/**
+ * A subtitle track, as text. It comes through here rather than from the page because a content
+ * script's fetch is still subject to CORS - the host permission that waives it belongs to the
+ * worker - and because the URL is checked against the configured instance on the way past, so
+ * this stays a route to one server rather than a fetch-anything service.
+ */
+async function subtitle(url) {
+  const config = await settings();
+  const base = origin(config.instance);
+
+  if (typeof url !== 'string' || !url.startsWith(`${base}/`)) {
+    return { ok: false, error: 'That subtitle track is not on the configured instance.' };
+  }
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) return { ok: false, error: `The instance answered ${response.status}.` };
+
+    const text = await response.text();
+
+    if (!/\d\d:\d\d/.test(text)) return { ok: false, error: 'The track came back with no cues.' };
+
+    return { ok: true, vtt: text };
+  } catch (error) {
+    return { ok: false, error: String(error?.message ?? error) };
+  }
+}
+
 api.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const handlers = {
     resolve: () => handleResolve(message.url, message.force === true),
     downloads: () => downloads(message.url),
+    subtitle: () => subtitle(message.url),
     settings: async () => ({ ok: true, data: await settings() }),
     save: async () => {
       await api.storage.sync.set(message.values);

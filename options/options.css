@@ -251,6 +251,19 @@ input[type="range"]:focus-visible {
   outline: none;
 }
 
+/* The open list is drawn by the browser and inherits none of the select's styling, so it comes
+   out as a grey system menu unless the options are coloured themselves. */
+select option {
+  background: #16131d;
+  color: var(--text);
+  padding: 8px;
+}
+
+select option:checked {
+  background: var(--accent);
+  color: #fff;
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;

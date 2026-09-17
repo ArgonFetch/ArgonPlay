@@ -14,7 +14,7 @@
  */
 
 (() => {
-  const { el, icon, ICONS, time, size, log } = globalThis.Argon;
+  const { el, icon, ICONS, time, size, log, send } = globalThis.Argon;
 
   /** Past this the two are audibly apart, and a jump costs less than the drift. */
   const HARD_RESYNC_SECONDS = 0.25;
@@ -57,6 +57,8 @@
       // What the page told us about itself: caption tracks and the video it would play next.
       this.captions = [];
       this.caption = null;
+      /** Whether `captions` came from the page rather than from the instance. */
+      this.pageCaptions = true;
       this.upNext = null;
       this.chapters = [];
       this.board = null;
@@ -104,6 +106,11 @@
 
       this.status = el('div', { class: 'ap-status' });
 
+      // Cues are painted here rather than by the browser. Its own renderer anchors them to the
+      // bottom of the video element, which is where the control bar is, and styles them like a
+      // 2011 television - YouTube paints its own for the same reason.
+      this.captionBox = el('div', { class: 'ap-captions' });
+
       this.stage = el('div', { class: 'ap-stage' }, [
         this.poster,
         this.video,
@@ -112,6 +119,7 @@
         this.largePlay,
         this.bezel,
         this.bezelTextWrap,
+        this.captionBox,
         this.status,
       ]);
 
@@ -382,7 +390,13 @@
 
       this.root.addEventListener('mousemove', () => this.wake());
       this.root.addEventListener('mouseleave', () => this.sleep());
-      this.root.addEventListener('keydown', (event) => this.key(event));
+      /*
+       * On the document rather than on the player: YouTube's own shortcuts work wherever you are
+       * on the page, and a viewer pressing space after scrolling to the comments does not think
+       * of themselves as having left the player. Typing is the only thing that must win.
+       */
+      this.keys = (event) => this.key(event);
+      document.addEventListener('keydown', this.keys, true);
 
       document.addEventListener('fullscreenchange', () => this.paintFullscreen());
 
@@ -416,7 +430,10 @@
       this.ticker = setInterval(() => this.tick(), 250);
 
       // Theater mode, a window resize, full screen: the fitted size has to follow the box.
-      this.resizer = new ResizeObserver(() => this.fitVideo());
+      this.resizer = new ResizeObserver(() => {
+        this.fitVideo();
+        this.sizeCaptions();
+      });
       this.resizer.observe(this.root);
 
       this.paintFullscreen();
@@ -441,6 +458,16 @@
       // player must not pretend otherwise.
       this.canRestart = media.source === 'playback';
       this.degraded = media.source !== 'playback';
+
+      // The instance's own tracks win over the ones the page listed: it can read them and this
+      // browser cannot. The page's remain as the fallback for an instance that offers none.
+      this.pageCaptions = (media.subtitles ?? []).length === 0;
+
+      if (!this.pageCaptions) {
+        this.captions = media.subtitles;
+        this.showCaptionButton();
+        this.buildSettings();
+      }
 
       this.root.classList.toggle('is-degraded', this.degraded);
 
@@ -1608,6 +1635,20 @@
       this.video.style.height = `${Math.round(height * scale)}px`;
     }
 
+    /**
+     * Caption text is a share of the player's height, not a fixed size: the same cue has to read
+     * the same way in a small embed and across a 4K screen.
+     */
+    sizeCaptions() {
+      const box = this.root.getBoundingClientRect();
+
+      if (!box.height) return;
+
+      const size = Math.round(Math.min(48, Math.max(13, box.height * 0.045)));
+
+      this.root.style.setProperty('--ap-cue-size', `${size}px`);
+    }
+
     // ---------------------------------------------------------------- subtitles
 
     /**
@@ -1619,6 +1660,8 @@
       this.caption = track;
 
       for (const existing of [...this.video.querySelectorAll('track')]) existing.remove();
+
+      this.captionBox?.replaceChildren();
 
       if (this.captionUrl) {
         URL.revokeObjectURL(this.captionUrl);
@@ -1646,12 +1689,21 @@
 
         this.video.appendChild(node);
 
-        // Chrome ignores `default` on a track added after the element already has a source.
-        node.addEventListener('load', () => {
-          if (node.track) node.track.mode = 'showing';
-        });
+        // `hidden` rather than `showing`: the cues are parsed, and painting them is ours to do.
+        // Chrome also ignores `default` on a track added after the element already has a source,
+        // so the mode is set again once it has loaded.
+        const take = () => {
+          if (!node.track) return;
 
-        if (node.track) node.track.mode = 'showing';
+          node.track.mode = 'hidden';
+          node.track.addEventListener('cuechange', () => this.paintCues(node.track));
+
+          this.sizeCaptions();
+          this.paintCues(node.track);
+        };
+
+        node.addEventListener('load', take);
+        take();
       } catch (error) {
         log('captions failed', error);
         this.caption = null;
@@ -1661,12 +1713,30 @@
     }
 
     /**
+     * A track from the instance arrives as WebVTT already, converted there from whatever the
+     * source sent. It goes through the worker because a content script's fetch is still subject
+     * to CORS and youtube.com is not the instance's origin.
+     */
+    async fetchCaptions(track) {
+      if (track.source === 'instance') {
+        const response = await send({ type: 'subtitle', url: track.url });
+
+        if (!response?.ok) throw new Error(response?.error ?? 'The instance served no subtitles');
+
+        return response.vtt;
+      }
+
+      return this.fetchPageCaptions(track);
+    }
+
+    /**
      * timedtext answers in whichever format it feels like. `fmt=vtt` is the one we want and is
      * also the one that most often comes back empty, so each format is tried in turn and the
      * result is checked rather than trusted - an empty body makes a track with no cues, which
-     * looks exactly like subtitles being broken and reports no error at all.
+     * looks exactly like subtitles being broken and reports no error at all. As of late this is
+     * every format, for every video, which is why the instance serves them instead.
      */
-    async fetchCaptions(track) {
+    async fetchPageCaptions(track) {
       const attempts = [
         { fmt: 'vtt', parse: (body) => (body.trimStart().startsWith('WEBVTT') ? body : null) },
         { fmt: 'json3', parse: (body) => Player.json3ToVtt(body) },
@@ -1786,6 +1856,30 @@
       return lines.length > 2 ? lines.join('\n') : null;
     }
 
+    /**
+     * One line per active cue, in the player's own type. `getCueAsHTML` keeps the italics and
+     * the line breaks a cue may carry and hands back nodes rather than a string, which is what
+     * youtube.com's Trusted Types policy leaves us room to use.
+     */
+    paintCues(track) {
+      if (!this.captionBox) return;
+
+      if (!this.caption || track !== this.video.querySelector('track')?.track) {
+        this.captionBox.replaceChildren();
+        return;
+      }
+
+      const lines = [...(track.activeCues ?? [])].map((cue) => {
+        const line = el('div', { class: 'ap-cue' });
+
+        line.appendChild(cue.getCueAsHTML());
+
+        return line;
+      });
+
+      this.captionBox.replaceChildren(...lines);
+    }
+
     paintCaptionButton() {
       const on = Boolean(this.caption);
 
@@ -1796,7 +1890,10 @@
 
     /** What boot.js hands over once the page has told it what it holds. */
     describePage({ captions, upNext, duration, chapters, storyboard }) {
-      this.captions = captions ?? [];
+      // Only if the instance had none - it is answered later than this and would otherwise be
+      // overwritten by the page's list every time the page re-announces itself.
+      if (this.pageCaptions !== false) this.captions = captions ?? [];
+
       this.upNext = upNext ?? null;
       this.chapters = (chapters ?? []).filter((chapter) => Number.isFinite(chapter.start));
       this.board = globalThis.Argon.storyboard(storyboard);
@@ -1809,12 +1906,14 @@
 
       this.buildSegments();
       this.paint();
+      this.showCaptionButton();
+      this.buildSettings();
+    }
 
+    showCaptionButton() {
       if (this.captionButton) {
         this.captionButton.style.display = this.captions.length > 0 ? '' : 'none';
       }
-
-      this.buildSettings();
     }
 
     toggleCaptions() {
@@ -1842,8 +1941,18 @@
     // ---------------------------------------------------------------- input
 
     key(event) {
-      const typing = event.target.matches?.('input, textarea, [contenteditable="true"]');
-      if (typing || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (this.root.dataset.state === 'error') return;
+
+      const target = event.target;
+
+      // Anywhere a keystroke means a character rather than a command: the search box, a comment
+      // being written, a renamed playlist. YouTube's own search also opens on "/" and takes focus.
+      const typing = target?.matches?.('input, textarea, select, [contenteditable="true"]')
+        || target?.isContentEditable === true
+        || target?.closest?.('input, textarea, [contenteditable="true"]') !== null;
+
+      if (typing) return;
 
       const actions = {
         ' ': () => this.toggle(),
@@ -1919,6 +2028,7 @@
 
       if (this.captionUrl) URL.revokeObjectURL(this.captionUrl);
 
+      document.removeEventListener('keydown', this.keys, true);
       document.removeEventListener('pointerdown', this.dismiss, true);
       document.removeEventListener('keydown', this.escape, true);
       document.removeEventListener('visibilitychange', this.hidden);

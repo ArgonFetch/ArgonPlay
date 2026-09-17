@@ -12,6 +12,12 @@
   const PLAYER_BOX = '#player-container';
   const ACTION_ROW = '#top-level-buttons-computed';
 
+  /**
+   * A row in the ... overflow menu. YouTube has moved its own download entry in there, and has
+   * rewritten what those rows are made of more than once - hence the list rather than a tag name.
+   */
+  const MENU_ITEM = 'ytd-menu-service-item-renderer, yt-list-item-view-model, tp-yt-paper-item, [role="menuitem"]';
+
   const DOWNLOAD_LABELS =
     /download|herunterladen|télécharger|descargar|scarica|baixar|pobierz|下载|ダウンロード|다운로드|скачать|indir/i;
 
@@ -267,18 +273,8 @@
     const native = nativeDownloadButton();
 
     if (native) {
-      if (native.dataset.argonplay === 'on') return;
-
-      native.dataset.argonplay = 'on';
       native.setAttribute('title', 'Download with ArgonFetch');
-
-      // Capture, because YouTube's own handler would otherwise open its Premium sheet first.
-      native.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        openDownloads(native);
-      }, true);
-
+      native.dataset.argonplay = 'on';
       log('took over the page download button');
       return;
     }
@@ -288,14 +284,62 @@
     const mine = cloneShareButton();
     if (!mine) return;
 
-    mine.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openDownloads(mine.querySelector('button') ?? mine);
-    }, true);
-
     row.appendChild(mine);
     log('added a download button');
+  }
+
+  /**
+   * YouTube opens its Premium sheet from a handler above the button, and capture runs top down,
+   * so a listener on the button itself is already too late - the sheet is on its way before it
+   * fires. This one sits at the document, which is the only place that beats them to it.
+   */
+  function interceptDownloadClicks() {
+    document.addEventListener('click', (event) => {
+      const path = event.composedPath?.() ?? [];
+      const clickable = path.find((node) =>
+        node instanceof HTMLElement && (node.tagName === 'BUTTON' || node.matches(MENU_ITEM)))
+        ?? event.target?.closest?.(`button, ${MENU_ITEM}`);
+
+      if (!clickable) return;
+
+      const mine = clickable.closest('#argonplay-download');
+
+      // In the action row the label is the aria-label; in the overflow menu it is the text of
+      // the row itself, and the row is not a <button> at all.
+      const inRow = clickable.closest(ACTION_ROW);
+      const label = inRow
+        ? clickable.getAttribute('aria-label') ?? ''
+        : clickable.textContent ?? '';
+
+      const native = clickable.closest('ytd-download-button-renderer')
+        || ((inRow || clickable.closest(MENU_ITEM)) && DOWNLOAD_LABELS.test(label));
+
+      if (!mine && !native) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      // Taking the click away from YouTube also takes away the thing that would have closed the
+      // menu, so it would otherwise sit open behind our own panel.
+      if (!inRow && !mine) closeOverflowMenu(clickable);
+
+      openDownloads(clickable);
+    }, true);
+  }
+
+  /**
+   * Escape rather than a property assignment: `opened = false` on the dropdown is a Polymer
+   * setter that lives in the page's world, and a content script writing that name only puts a
+   * plain property on its own side of the wrapper, where nothing reads it.
+   */
+  function closeOverflowMenu(item) {
+    const dropdown = item.closest('tp-yt-iron-dropdown')
+      ?? document.querySelector('tp-yt-iron-dropdown[aria-hidden="false"]');
+
+    // Not document as a fallback target: our own player reads Escape there.
+    dropdown?.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true,
+    }));
   }
 
   function closeDownloads() {
@@ -458,6 +502,7 @@
   globalThis.Argon.debug = state;
 
   listenForPageData();
+  interceptDownloadClicks();
   sync();
   watch();
 
