@@ -1,15 +1,23 @@
 # <p align="center">Argon Play</p>
-
 <p align="center">
-  <img src="icons/icon.svg" width="120" alt="Argon Play">
+  <img src="icons/icon.svg" width="200" alt="Argon Play Logo">
 </p>
-
 <p align="center">
-  <strong>YouTube, played from an ArgonFetch instance.</strong><br>
+  <strong>Argon Play watches YouTube through ArgonFetch.</strong>
   The page never starts YouTube's player, so there is nothing for an ad to interrupt.
+</p>
+<p align="center">
+  <a href="https://github.com/ArgonFetch/ArgonPlay"><img src="https://badgetrack.pianonic.ch/badge?tag=argon-play&label=visits&color=9f54e5&style=flat" alt="visits" /></a>
+  <a href="https://github.com/ArgonFetch/ArgonFetch"><img src="https://img.shields.io/badge/Main%20Project-ArgonFetch-9f54e5.svg"/></a>
+  <a href="https://www.argonfetch.dev/"><img src="https://img.shields.io/badge/Cloud%20Instance-argonfetch.dev-9f54e5.svg"/></a>
+  <a href="https://docs.argonfetch.dev/api"><img src="https://img.shields.io/badge/Documentation-docs.argonfetch.dev-9f54e5.svg"/></a>
 </p>
 
 ---
+
+> **⚠️ Important Note:** Argon Play is not published to any store yet, so it is loaded unpacked. It
+> also needs an ArgonFetch instance running v1.6.6 or newer - older ones have no playback endpoint,
+> and the timeline cannot seek without it.
 
 ## What it does
 

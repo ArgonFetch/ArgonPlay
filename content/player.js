@@ -1047,9 +1047,13 @@
       if (/signed-in session|cookies file|COOKIES_PATH/i.test(raw)) {
         return {
           title: 'YouTube asked the instance to sign in',
-          detail: 'It does this to servers it does not recognise, often only for a moment. Trying '
-            + 'again usually works. If the instance is yours, giving it a cookies file stops it '
-            + 'happening.',
+          // Worth saying outright, because the obvious reading is wrong: being signed in here
+          // changes nothing. The fetch happens on the server, from its address, and your session
+          // never leaves this browser.
+          detail: 'The instance fetches from its own address, not from your browser, so your own '
+            + 'YouTube login does not apply to it. YouTube does this to servers it does not '
+            + 'recognise, often only for a moment - trying again usually works. If the instance '
+            + 'is yours, giving it a cookies file settles it for good.',
           retry: true,
         };
       }
